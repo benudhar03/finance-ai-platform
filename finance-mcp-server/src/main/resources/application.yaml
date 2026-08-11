@@ -1,0 +1,30 @@
+server:
+  port: 8888
+spring:
+  application:
+    name: finance-mcp-server
+  ai:
+    mcp:
+      server:
+        name: finance-mcp-server
+        version: 1.0.0
+        protocol: STREAMABLE
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finance_db
+    username: postgres
+    password: P@ssw0rd
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

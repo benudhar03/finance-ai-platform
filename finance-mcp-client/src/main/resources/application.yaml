@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: finance-mcp-client
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4.1-mini
+          temperature: 0.0
+    mcp:
+      client:
+        enabled: true
+        name: finance-mcp-client
+        version: 1.0.0
+        type: SYNC
+        initialized: true
+        request-timeout: 30s
+
+        streamable-http:
+          connections:
+            finance-server:
+              url: http://localhost:8888
+              endpoint: /mcp
+server:
+  port: 8989
