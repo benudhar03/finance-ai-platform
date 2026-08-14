@@ -4,7 +4,6 @@ import com.ar.mcp.account.domain.Account;
 import com.ar.mcp.account.repository.AccountRepository;
 import com.ar.mcp.transaction.domain.Transaction;
 import com.ar.mcp.transaction.dto.AccountTransactionsResponse;
-import com.ar.mcp.transaction.dto.TransactionResponse;
 import com.ar.mcp.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,35 +13,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class TransactionService {
 
-    private static final int DEFAULT_LIMIT = 10;
-    private static final int MAX_LIMIT = 100;
-
-    private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final AccountRepository accountRepository;
 
-    public AccountTransactionsResponse getAccountTransactions(
-            String accountNumber,
-            String fromDate,
-            String toDate,
-            Integer limit) {
+    public AccountTransactionsResponse getAccountTransactions(String accountNumber, String fromDate, String toDate, Integer limit) {
 
-        validateAccountNumber(accountNumber);
-        log.info(
-                "Fetching transactions for account={}, fromDate={}, toDate={}, limit={}",
-                mask(accountNumber),
-                fromDate,
-                toDate,
-                limit
-        );
-
+        // 1. Validate account
         Account account = accountRepository
                 .findByAccountNumber(accountNumber)
                 .orElseThrow(() ->
@@ -51,144 +36,67 @@ public class TransactionService {
                         )
                 );
 
-        int transactionLimit = normalizeLimit(limit);
-
-        Instant from = parseFromDate(fromDate);
-        Instant to = parseToDate(toDate);
-
-        validateDateRange(from, to);
+        // 2. Default / validate limit
+        int transactionLimit =
+                limit == null || limit <= 0
+                        ? 10
+                        : Math.min(limit, 100);
 
         List<Transaction> transactions;
 
-        if (from == null && to == null) {
+        // 3. No date range → latest transactions
+        if (fromDate == null && toDate == null) {
 
             transactions = transactionRepository
                     .findByAccountAccountNumberOrderByTransactionDateDesc(
                             accountNumber
-                    );
+                    )
+                    .stream()
+                    .limit(transactionLimit)
+                    .toList();
 
         } else {
 
-            Instant effectiveFrom =
-                    from != null
-                            ? from
-                            : Instant.EPOCH;
+            // 4. Date range provided → both dates required
+            if (fromDate == null || toDate == null) {
+                throw new IllegalArgumentException(
+                        "Both fromDate and toDate must be provided."
+                );
+            }
 
-            Instant effectiveTo =
-                    to != null
-                            ? to
-                            : Instant.now();
+            Instant from = parseDate(fromDate);
+            Instant to = parseDate(toDate);
+
+            if (from.isAfter(to)) {
+                throw new IllegalArgumentException("fromDate cannot be after toDate.");
+            }
 
             transactions = transactionRepository
                     .findByAccountAccountNumberAndTransactionDateBetweenOrderByTransactionDateDesc(
                             accountNumber,
-                            effectiveFrom,
-                            effectiveTo
-                    );
+                            from,
+                            to
+                    )
+                    .stream()
+                    .limit(transactionLimit)
+                    .toList();
         }
 
-        List<TransactionResponse> responses = transactions.stream()
-                .limit(transactionLimit)
-                .map(this::toResponse)
-                .toList();
-
-        return new AccountTransactionsResponse(
-                account.getAccountNumber(),
-                account.getCurrency(),
-                responses
-        );
+        return AccountTransactionsResponse.from(account, transactions);
     }
 
-    private TransactionResponse toResponse(
-            Transaction transaction
-    ) {
+    private Instant parseDate(String date) {
 
-        return new TransactionResponse(
-                transaction.getTransactionReference(),
-                transaction.getType(),
-                transaction.getAmount(),
-                transaction.getCurrency(),
-                transaction.getDescription(),
-                transaction.getTransactionDate()
-        );
-    }
+        try {
+            return LocalDate
+                    .parse(date)
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant();
 
-    private int normalizeLimit(Integer limit) {
-
-        if (limit == null) {
-            return DEFAULT_LIMIT;
-        }
-
-        if (limit <= 0) {
+        } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException(
-                    "Transaction limit must be greater than zero"
+                    "Invalid date format. Expected yyyy-MM-dd."
             );
         }
-
-        return Math.min(limit, MAX_LIMIT);
-    }
-
-    private Instant parseFromDate(String date) {
-
-        if (date == null || date.isBlank()) {
-            return null;
-        }
-
-        return LocalDate.parse(date)
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant();
-    }
-
-    private Instant parseToDate(String date) {
-
-        if (date == null || date.isBlank()) {
-            return null;
-        }
-
-        return LocalDate.parse(date)
-                .plusDays(1)
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant()
-                .minusNanos(1);
-    }
-
-    private void validateDateRange(Instant from, Instant to) {
-
-        if (from != null &&
-                to != null &&
-                from.isAfter(to)) {
-
-            throw new IllegalArgumentException(
-                    "From date must not be after to date"
-            );
-        }
-    }
-
-    private void validateAccountNumber(String accountNumber) {
-        if (accountNumber == null ||
-                accountNumber.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Account number must not be empty"
-            );
-        }
-
-        if (!accountNumber.matches("^ACC-\\d{4,}$")) {
-            throw new IllegalArgumentException(
-                    "Invalid account number format"
-            );
-        }
-    }
-
-    private String mask(String accountNumber) {
-
-        if (accountNumber == null ||
-                accountNumber.length() <= 4) {
-            return "****";
-        }
-
-        return "****" +
-                accountNumber.substring(
-                        accountNumber.length() - 4
-                );
     }
 }

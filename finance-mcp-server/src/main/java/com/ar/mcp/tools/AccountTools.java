@@ -49,20 +49,19 @@ public class AccountTools {
                     Retrieves transactions for a financial account.
 
                     Required:
-                    - account number
+                    - accountNumber
 
                     Optional:
-                    - from date in ISO-8601 format (yyyy-MM-dd)
-                    - to date in ISO-8601 format (yyyy-MM-dd)
-                    - maximum number of transactions to return
+                    - fromDate in yyyy-MM-dd format
+                    - toDate in yyyy-MM-dd format
+                    - limit for maximum number of transactions
 
-                    If no dates are provided, the most recent transactions
-                    are returned.
-
-                    If no limit is provided, the service uses its default limit.
-
-                    This is a READ-ONLY operation.
-                    It does not modify account data or create transactions.
+                    IMPORTANT:
+                    - If fromDate and toDate are not provided,
+                      return the most recent available transactions.
+                    - Never assume or invent a date range.
+                    - If limit is not provided, use the service default.
+                    - This operation is READ-ONLY.
                     """
     )
     public AccountTransactionsResponse getAccountTransactions(
