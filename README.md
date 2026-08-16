@@ -18,7 +18,19 @@ finance-ai-platform/
 │   ├── README.md
 │   └── src/
 │
-└── finance-mcp-client/
-    ├── pom.xml
+├── finance-mcp-client/
+│   ├── pom.xml
+│   ├── README.md
+│   └── src/
+│
+└── finance-ai-agent/
     ├── README.md
-    └── src/
+    ├── requirements.txt
+    ├── .env.example
+    ├── app/
+    │   ├── main.py
+    │   ├── api/
+    │   ├── mcp/
+    │   ├── models/
+    │   └── ...
+    └── tests/
