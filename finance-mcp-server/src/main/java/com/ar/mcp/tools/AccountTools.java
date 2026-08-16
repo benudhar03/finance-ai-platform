@@ -2,6 +2,7 @@ package com.ar.mcp.tools;
 
 import com.ar.mcp.account.dto.AccountBalanceResponse;
 import com.ar.mcp.account.service.AccountService;
+import com.ar.mcp.transaction.dto.AccountTransactionsRequest;
 import com.ar.mcp.transaction.dto.AccountTransactionsResponse;
 import com.ar.mcp.transaction.service.TransactionService;
 import jakarta.annotation.PostConstruct;
@@ -9,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -37,51 +40,50 @@ public class AccountTools {
                     """
     )
     public AccountBalanceResponse getAccountBalance(String accountNumber) {
-
         log.info("MCP tool invoked: getAccountBalance, accountNumber={}", mask(accountNumber));
         return accountService.getAccountBalance(accountNumber);
     }
 
-
     @Tool(
             name = "getAccountTransactions",
             description = """
-                    Retrieves transactions for a financial account.
+                Retrieves transactions for a financial account.
 
-                    Required:
-                    - accountNumber
+                Required:
+                - accountNumber
 
-                    Optional:
-                    - fromDate in yyyy-MM-dd format
-                    - toDate in yyyy-MM-dd format
-                    - limit for maximum number of transactions
+                Optional:
+                - fromDate in yyyy-MM-dd format
+                - toDate in yyyy-MM-dd format
+                - limit for maximum number of transactions
 
-                    IMPORTANT:
-                    - If fromDate and toDate are not provided,
-                      return the most recent available transactions.
-                    - Never assume or invent a date range.
-                    - If limit is not provided, use the service default.
-                    - This operation is READ-ONLY.
-                    """
+                If fromDate and toDate are not provided,
+                return the most recent available transactions.
+
+                Never assume or invent a date range.
+
+                If limit is not provided,
+                use the service default.
+
+                This operation is READ-ONLY.
+                """
     )
-    public AccountTransactionsResponse getAccountTransactions(
-            String accountNumber,
-            String fromDate,
-            String toDate,
-            Integer limit) {
+    public AccountTransactionsResponse getAccountTransactions(AccountTransactionsRequest request) {
+
         log.info(
                 "MCP tool invoked: getAccountTransactions, " +
                         "accountNumber={}, fromDate={}, toDate={}, limit={}",
-                mask(accountNumber),
-                fromDate,
-                toDate,
-                limit
+                mask(request.getAccountNumber()),
+                request.getFromDate(),
+                request.getToDate(),
+                request.getLimit()
         );
+
         return transactionService.getAccountTransactions(
-                accountNumber,
-                fromDate,
-                toDate,
-                limit
+                request.getAccountNumber(),
+                request.getFromDate(),
+                request.getToDate(),
+                request.getLimit()
         );
     }
 

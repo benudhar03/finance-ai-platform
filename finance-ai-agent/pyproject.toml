@@ -1,0 +1,16 @@
+[project]
+name = "finance-ai-agent"
+version = "0.1.0"
+description = "Agentic AI service for the Finance AI Platform"
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

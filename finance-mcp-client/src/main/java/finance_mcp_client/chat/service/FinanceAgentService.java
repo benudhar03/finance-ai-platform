@@ -1,5 +1,8 @@
 package finance_mcp_client.chat.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
@@ -14,32 +17,30 @@ public class FinanceAgentService {
 
     private final ChatClient chatClient;
     private final ToolCallbackProvider mcpTools;
+    private final ObjectMapper objectMapper;
 
-    public FinanceAgentService(
-            ChatClient chatClient,
-            ToolCallbackProvider mcpTools) {
+    public FinanceAgentService(ChatClient chatClient, ToolCallbackProvider mcpTools, ObjectMapper objectMapper) {
 
         log.info("========== FinanceAgentService CREATED ==========");
-
         this.chatClient = chatClient;
         this.mcpTools = mcpTools;
-
+        this.objectMapper = objectMapper;
         log.info("========== MCP TOOLS ==========");
-
         Arrays.stream(mcpTools.getToolCallbacks())
                 .map(ToolCallback::getToolDefinition)
                 .forEach(tool ->
-                        log.info("MCP Tool: {}", tool.name())
+                        log.info(
+                                "MCP Tool: {}",
+                                tool.name()
+                        )
                 );
-
         log.info("==============================================");
     }
 
-    public String investigate(String message) {
+    public JsonNode investigate(String message) {
 
         log.info("Starting finance agent request: {}", message);
-
-        return chatClient
+        String response = chatClient
                 .prompt()
                 .system("""
                         You are a financial investigation agent.
@@ -60,20 +61,46 @@ public class FinanceAgentService {
                         7. Analyze the results returned by the tools before
                            producing the final answer.
                         8. Base your conclusions only on retrieved data.
-                        9. Clearly distinguish facts from your analysis.
-                        10. This agent is strictly READ-ONLY.
-                        11. Never modify, create, delete, transfer, or freeze
+                        9. This agent is strictly READ-ONLY.
+                        10. Never modify, create, delete, transfer, or freeze
                             financial data.
-                                               \s
-                        When investigating an account, prefer this approach:
-                        - Retrieve the account balance.
-                        - Retrieve the relevant transactions.
-                        - Analyze the returned transaction data.
-                        - Provide a concise investigation summary.
-                       \s""")
+
+                        RESPONSE FORMAT:
+
+                        Return ONLY valid JSON.
+
+                        Do not return markdown.
+                        Do not return ```json.
+                        Do not return explanations outside the JSON.
+
+                        Preserve the structure and values returned by the MCP tools.
+
+                        For account balance requests, return the MCP result
+                        as JSON.
+
+                        For transaction requests, return the MCP result
+                        as JSON.
+
+                        Example:
+
+                        {
+                          "accountNumber": "ACC-1002",
+                          "currency": "EUR",
+                          "transactions": []
+                        }
+                        """)
                 .user(message)
                 .tools(mcpTools)
                 .call()
                 .content();
+
+        log.info("Raw LLM response: {}", response);
+        try {
+            return objectMapper.readTree(response);
+        } catch (JsonProcessingException e) {
+            log.warn("LLM response is not valid JSON. Returning as text.");
+            return objectMapper.createObjectNode()
+                    .put("message", response);
+        }
     }
 }
