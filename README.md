@@ -15,7 +15,7 @@ The platform currently consists of three primary components:
 
 1. **Finance MCP Server** — Java Spring Boot service that exposes financial operations as MCP tools.
 2. **Finance MCP Client / AI Agent** — Java Spring Boot service responsible for interacting with the LLM and dynamically invoking MCP tools.
-3. **Finance AI Agent** — Python FastAPI service that provides the external AI/chat API and communicates with the MCP layer.
+3. **Finance AI Agent** — Python FastAPI service that provides the external AI/chat API and communicates with the MCP layer. 
 
 ### 🏗️ High-Level Architecture
 
