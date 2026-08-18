@@ -5,10 +5,13 @@ import com.ar.mcp.account.dto.AccountBalanceResponse;
 import com.ar.mcp.account.repository.AccountRepository;
 import com.ar.mcp.common.exception.AccountNotFoundException;
 import com.ar.mcp.common.exception.InvalidAccountException;
+import com.ar.mcp.cache.AccountCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
+    private final AccountCacheService accountCacheService;
 
     @Override
     public AccountBalanceResponse getAccountBalance(String accountNumber) {
@@ -24,12 +28,20 @@ public class AccountServiceImpl implements AccountService {
         validateAccountNumber(accountNumber);
         log.info("Fetching account balance, accountNumber={}", maskAccountNumber(accountNumber));
 
+        Optional<AccountBalanceResponse> cached = accountCacheService.get(accountNumber);
+        if (cached.isPresent()){
+            log.info("Cache Hit AccountNumber: {}", maskAccountNumber(accountNumber));
+            return cached.get();
+        }
         Account account = accountRepository
                 .findByAccountNumber(accountNumber)
                 .orElseThrow(() ->
                         new AccountNotFoundException(accountNumber)
                 );
-        return AccountBalanceResponse.from(account);
+        log.info("Cache Miss AccountNumber: {}", maskAccountNumber(accountNumber));
+        AccountBalanceResponse response = AccountBalanceResponse.from(account);
+        accountCacheService.put(response);
+        return response;
     }
 
     private void validateAccountNumber(String accountNumber) {

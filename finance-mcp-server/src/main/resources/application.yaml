@@ -1,8 +1,10 @@
 server:
   port: 8888
+
 spring:
   application:
     name: finance-mcp-server
+
   ai:
     mcp:
       server:
@@ -19,10 +21,21 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
-
     properties:
       hibernate:
         format_sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 5s
+
+app:
+  redis:
+    ttl-minutes: 10
+    refresh-interval-ms: 300000
+
 management:
   endpoints:
     web:
