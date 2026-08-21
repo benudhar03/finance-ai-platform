@@ -194,4 +194,30 @@ public class TransactionCacheServiceImpl implements TransactionCacheService {
                 );
     }
 
+    @Override
+    public void evictByAccount(String accountNumber) {
+
+        String keyPattern =
+                RedisKeyBuilder.accountTransactionsPrefix(accountNumber) + "*";
+
+        Set<String> cacheKeys =
+                redisTemplate.keys(keyPattern);
+
+        if (cacheKeys == null || cacheKeys.isEmpty()) {
+
+            log.info(
+                    "No transaction cache entries found for accountNumber={}",
+                    maskAccountNumber(accountNumber)
+            );
+
+            return;
+        }
+
+        redisTemplate.delete(cacheKeys);
+
+        log.info("Transaction cache entries evicted. " + "accountNumber={}, entriesRemoved={}",
+                maskAccountNumber(accountNumber), cacheKeys.size()
+        );
+    }
+
 }

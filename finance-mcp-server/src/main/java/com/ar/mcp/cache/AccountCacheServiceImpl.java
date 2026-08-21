@@ -55,8 +55,7 @@ public class AccountCacheServiceImpl implements AccountCacheService {
                     response.currency()
             );
             return Optional.of(response);
-        } catch (IllegalArgumentException exception) {
-
+        } catch (Exception exception) {
             /*
              * Cached data cannot be converted to the expected DTO.
              * Remove the invalid cache entry so the next request

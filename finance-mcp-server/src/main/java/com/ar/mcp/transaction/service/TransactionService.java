@@ -1,10 +1,14 @@
 package com.ar.mcp.transaction.service;
 
+import com.ar.mcp.Kafka.producer.TransactionEventProducer;
 import com.ar.mcp.account.domain.Account;
 import com.ar.mcp.account.repository.AccountRepository;
 import com.ar.mcp.cache.TransactionCacheService;
+import com.ar.mcp.common.util.TransactionIdGenerator;
 import com.ar.mcp.transaction.domain.Transaction;
 import com.ar.mcp.transaction.dto.AccountTransactionsResponse;
+import com.ar.mcp.transaction.dto.CreateTransactionRequest;
+import com.ar.mcp.transaction.dto.TransactionResponse;
 import com.ar.mcp.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +31,41 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final TransactionCacheService transactionCacheService;
+    private final TransactionEventProducer transactionEventProducer;
+
+
+    @Transactional
+    public TransactionResponse createTransaction(CreateTransactionRequest request) {
+
+        Account account = accountRepository
+                .findByAccountNumber(request.accountNumber())
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Account not found: " + request.accountNumber()
+                        )
+                );
+        String transactionId =
+                TransactionIdGenerator.nextTransactionId();
+
+        Transaction transaction = new Transaction(
+                transactionId,
+                account,
+                request.transactionType(),
+                request.amount(),
+                request.currency(),
+                request.description(),
+                Instant.now()
+        );
+
+        Transaction savedTransaction =
+                transactionRepository.save(transaction);
+        /*
+         * The newly created transaction can make existing
+         * transaction-history cache entries stale.
+         */
+        transactionCacheService.evictByAccount(account.getAccountNumber());
+        return TransactionResponse.from(savedTransaction);
+    }
 
     public AccountTransactionsResponse getAccountTransactions(
             String accountNumber,

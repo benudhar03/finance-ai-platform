@@ -1,8 +1,6 @@
 package com.ar.mcp.cache;
 
 import com.ar.mcp.transaction.dto.AccountTransactionsResponse;
-
-import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
@@ -29,6 +27,7 @@ public interface TransactionCacheService {
             String toDate,
             Integer limit
     );
+    void evictByAccount(String accountNumber);
 
     void markForRefresh(String accountNumber);
 

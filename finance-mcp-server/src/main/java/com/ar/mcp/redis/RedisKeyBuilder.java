@@ -6,6 +6,7 @@ public final class RedisKeyBuilder {
 
     private static final String ACCOUNT_BALANCE_PREFIX = "finance:account:balance:";
     private static final String ACCOUNT_REFRESH_SET = "finance:account:balance:refresh";
+    private static final String ACCOUNT_TRANSACTIONS_PREFIX = "finance:account:transactions:";
 
     private RedisKeyBuilder() {
     }
@@ -30,13 +31,13 @@ public final class RedisKeyBuilder {
                             ? 10
                             : Math.min(limit, 100);
 
-            return "finance:account:transactions:"
+            return ACCOUNT_TRANSACTIONS_PREFIX
                     + accountNumber
                     + ":recent:"
                     + transactionLimit;
         }
 
-        return "finance:account:transactions:"
+        return ACCOUNT_TRANSACTIONS_PREFIX
                 + accountNumber
                 + ":"
                 + fromDate
@@ -48,5 +49,9 @@ public final class RedisKeyBuilder {
 
     public static String transactionRefreshSet() {
         return "finance:account:transactions:refresh";
+    }
+
+    public static String accountTransactionsPrefix(String accountNumber) {
+        return ACCOUNT_TRANSACTIONS_PREFIX + accountNumber + ":";
     }
 }

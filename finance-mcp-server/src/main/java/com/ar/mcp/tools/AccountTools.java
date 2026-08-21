@@ -1,16 +1,22 @@
 package com.ar.mcp.tools;
 
+import com.ar.mcp.account.domain.CurrencyCode;
 import com.ar.mcp.account.dto.AccountBalanceResponse;
 import com.ar.mcp.account.service.AccountService;
+import com.ar.mcp.transaction.domain.TransactionType;
 import com.ar.mcp.transaction.dto.AccountTransactionsRequest;
 import com.ar.mcp.transaction.dto.AccountTransactionsResponse;
+import com.ar.mcp.transaction.dto.CreateTransactionRequest;
+import com.ar.mcp.transaction.dto.TransactionResponse;
 import com.ar.mcp.transaction.service.TransactionService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Slf4j
@@ -86,6 +92,39 @@ public class AccountTools {
                 request.getLimit()
         );
     }
+
+    @Tool(
+            name = "createTransaction",
+            description = "Creates a credit or debit transaction for a financial account."
+    )
+    public TransactionResponse createTransaction(
+            @ToolParam(description = "Account number, for example ACC-1001")
+            String accountNumber,
+
+            @ToolParam(description = "Transaction type: CREDIT or DEBIT")
+            TransactionType transactionType,
+
+            @ToolParam(description = "Transaction amount")
+            BigDecimal amount,
+
+            @ToolParam(description = "Transaction currency: INR, USD, EUR, or GBP")
+            CurrencyCode currency,
+
+            @ToolParam(description = "Description of the transaction")
+            String description
+    ) {
+        CreateTransactionRequest request =
+                new CreateTransactionRequest(
+                        accountNumber,
+                        transactionType,
+                        amount,
+                        currency,
+                        description
+                );
+
+        return transactionService.createTransaction(request);
+    }
+
 
 
     private String mask(String accountNumber) {

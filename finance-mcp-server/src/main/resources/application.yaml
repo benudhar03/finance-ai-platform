@@ -4,19 +4,16 @@ server:
 spring:
   application:
     name: finance-mcp-server
-
   ai:
     mcp:
       server:
         name: finance-mcp-server
         version: 1.0.0
         protocol: STREAMABLE
-
   datasource:
     url: jdbc:postgresql://localhost:5432/finance_db
     username: postgres
     password: P@ssw0rd
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -24,13 +21,23 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
   data:
     redis:
       host: localhost
       port: 6379
       timeout: 5s
-
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: finance-mcp-server
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.ar.mcp.*"
 app:
   redis:
     ttl-minutes: 10

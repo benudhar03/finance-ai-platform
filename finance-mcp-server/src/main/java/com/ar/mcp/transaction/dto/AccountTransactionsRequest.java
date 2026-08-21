@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.Data;
 
-import java.time.Instant;
-
 @Data
 public class AccountTransactionsRequest {
 

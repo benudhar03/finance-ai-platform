@@ -1,4 +1,4 @@
-package com.ar.mcp.config;
+package com.ar.mcp.common.util;
 
 import com.ar.mcp.account.domain.Account;
 import com.ar.mcp.account.domain.AccountStatus;
