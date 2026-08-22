@@ -1,15 +1,20 @@
 package com.ar.mcp.common.util;
 
-import java.util.concurrent.atomic.AtomicLong;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-public final class TransactionIdGenerator {
+import java.util.UUID;
 
-    private static final AtomicLong SEQUENCE = new AtomicLong(10010);
+@Component
+@RequiredArgsConstructor
+public class TransactionIdGenerator {
 
-    private TransactionIdGenerator() {
-    }
-
-    public static String nextTransactionId() {
-        return "TXN-" + SEQUENCE.incrementAndGet();
+    public String nextTransactionId() {
+        return "TXN-" +
+                UUID.randomUUID()
+                        .toString()
+                        .replace("-", "")
+                        .substring(0, 12)
+                        .toUpperCase();
     }
 }

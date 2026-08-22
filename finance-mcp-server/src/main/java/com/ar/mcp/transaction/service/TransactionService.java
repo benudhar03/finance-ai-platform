@@ -1,6 +1,8 @@
 package com.ar.mcp.transaction.service;
 
-import com.ar.mcp.Kafka.producer.TransactionEventProducer;
+import com.ar.mcp.Kafka.event.TransactionCreatedEvent;
+import com.ar.mcp.Kafka.event.TransactionEventPublisher;
+import com.ar.mcp.Kafka.producerconsumer.TransactionEventProducer;
 import com.ar.mcp.account.domain.Account;
 import com.ar.mcp.account.repository.AccountRepository;
 import com.ar.mcp.cache.TransactionCacheService;
@@ -12,6 +14,7 @@ import com.ar.mcp.transaction.dto.TransactionResponse;
 import com.ar.mcp.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +34,9 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final TransactionCacheService transactionCacheService;
-    private final TransactionEventProducer transactionEventProducer;
+    private final TransactionEventPublisher transactionEventPublisher;
+    private final TransactionIdGenerator transactionIdGenerator;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
 
     @Transactional
@@ -45,7 +50,7 @@ public class TransactionService {
                         )
                 );
         String transactionId =
-                TransactionIdGenerator.nextTransactionId();
+                transactionIdGenerator.nextTransactionId();
 
         Transaction transaction = new Transaction(
                 transactionId,
@@ -64,6 +69,19 @@ public class TransactionService {
          * transaction-history cache entries stale.
          */
         transactionCacheService.evictByAccount(account.getAccountNumber());
+
+        TransactionCreatedEvent event =
+                new TransactionCreatedEvent(
+                        savedTransaction.getTransactionReference(),
+                        account.getAccountNumber(),
+                        savedTransaction.getType(),
+                        savedTransaction.getAmount(),
+                        savedTransaction.getCurrency(),
+                        savedTransaction.getDescription(),
+                        savedTransaction.getTransactionDate()
+                );
+        applicationEventPublisher.publishEvent(event);
+
         return TransactionResponse.from(savedTransaction);
     }
 
